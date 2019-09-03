@@ -1,18 +1,20 @@
 import {Sprite} from 'pixi.js'
 import Bullet from './Bullet'
 
-class Player extends Sprite{
 
-    constructor(...params){
+class Enemy extends Sprite{
+
+
+constructor(...params){
         super(...params);
         this.anchor.set(.5);
     }
 
 
     shoot(){
-    	let bullet = new Bullet(-1);
+    	let bullet = new Bullet(1);
     	bullet.x = this.x - bullet.width / 2;
-    	bullet.y = this.y - this.height / 2 - bullet.height;
+    	bullet.y = this.y + this.height / 2 + bullet.height;
 
 
     	return bullet;
@@ -21,8 +23,13 @@ class Player extends Sprite{
 
     get speed(){
 
-        return 10;
+        return 3;
     }
+
+
+
 }
 
-export default Player;
+
+
+export default Enemy;

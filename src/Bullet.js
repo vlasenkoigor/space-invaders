@@ -2,13 +2,15 @@ import {Graphics} from 'pixi.js';
 
 class Bullet extends Graphics{
 
-    constructor(...params){
-        super(...params);
+    constructor(direction = 1){
+        super();
 
         this._bulletWidth = 2;
         this._bulletHeight = 5;
 
         this._speed  = 10;
+
+        this.direction = direction;
 
         this._drawBullet();
         this.cacheAsBitmap = true;
@@ -24,7 +26,7 @@ class Bullet extends Graphics{
 
 
     update(delta = 16){
-        this.y -= (this._speed * delta)
+        this.y += (this._speed * delta) * this.direction;
 
     }
 
