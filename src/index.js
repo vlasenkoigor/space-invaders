@@ -1,10 +1,14 @@
 import * as PIXI from 'pixi.js'
 
 import Player from './Player';
-import Enemy from './Enemy';
+import EnemyGroup from './EnemyGroup';
+import Blood from './Blood';
 
 
 const width = 800, height = 600;
+
+EnemyGroup.stageWindth = width;
+EnemyGroup.stageHeight = height;
 
 const app = new PIXI.Application({
     width, height, backgroundColor: 0x1099bb, resolution: 1,
@@ -28,32 +32,27 @@ stage.addChild(bulletsDebugInfoField);
 
 let player,
     mv = new PIXI.Point(), isShot = false,
-    bullets = [], enemies = [];
+    bullets = [], enemies = [], eg;
 
 loader
     .add('player', 'assets/player.png')
-    .add('enemy', 'assets/enemy.png')
+    .add('enemy', 'assets/enemy2.png')
+    .add('enemy1', 'assets/enemy2_1.png')
+    .add('blood', 'assets/anim_blood_atlas.png')
     .load((loader, resources)=>{
+        Blood.setTextureInfo(resources.blood.texture, 4, 4)
 
 
-        let enemies_N = 10,
-            startX = 100, 
-            startY = 100, 
-            hGap = 10,
-            vGap = 10;
+      
 
-        for (var i = 0; i < 30; i++) {
-            let enemy = new Enemy(resources.enemy.texture);
-            stage.addChild(enemy);
-            
-            enemy.x = startX +  (i % enemies_N) * (enemy.height + vGap) ;
-            enemy.y = startY + Math.floor(i / enemies_N) * (enemy.height + hGap);
-
-            enemies.push(enemy);
-        }
-     
-    
-
+        eg = new EnemyGroup(
+            [
+                resources.enemy.texture,
+                resources.enemy1.texture
+            ], 
+            false);
+        eg.attach(stage);
+        enemies = [...enemies, ...eg.units];
 
         //creating player
 
@@ -101,6 +100,10 @@ loader
             if (player.x > width) player.x = width;
 
 
+            //update enemies 
+            eg.update(delta);
+
+
 
 
             //cache enemies boundaries 
@@ -138,6 +141,8 @@ loader
                                 isBulletsFilteringNeeded = true;
                                 bullet.destroy();
 
+                                let enemyPos = enemies[j].getGlobalPosition();
+                                onEnemyDestroy(enemyPos)
                                 enemies[j].destroy();
                                 isEnemiesFilteringNeeded = true;
 
@@ -173,6 +178,14 @@ function shoot(){
     let bullet = player.shoot();
     stage.addChild(bullet);
     bullets.push(bullet);
+}
+
+function onEnemyDestroy(position){
+    let blood = new Blood();
+    blood.x = position.x;
+    blood.y = position.y;
+    stage.addChild(blood);
+
 }
 
 

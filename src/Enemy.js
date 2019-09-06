@@ -1,13 +1,16 @@
-import {Sprite} from 'pixi.js'
+import {AnimatedSprite} from 'pixi.js'
 import Bullet from './Bullet'
 
 
-class Enemy extends Sprite{
+class Enemy extends AnimatedSprite{
 
 
 constructor(...params){
         super(...params);
-        this.anchor.set(.5);
+        this.animationSpeed = 0.1;
+        this.play();
+
+       
     }
 
 
@@ -25,6 +28,8 @@ constructor(...params){
 
         return 3;
     }
+
+    
 
 
 
