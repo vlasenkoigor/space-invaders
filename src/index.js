@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js'
 import Player from './Player';
 import EnemyGroup from './EnemyGroup';
 import Blood from './Blood';
+import Lives from './Lives';
 
 
 const width = 800, height = 600;
@@ -23,7 +24,7 @@ const {stage, loader} = app;
 **/
 
 let bulletsDebugInfoField = new PIXI.Text('', {fill : 'red'});
-stage.addChild(bulletsDebugInfoField);
+// stage.addChild(bulletsDebugInfoField);
 /**
 
     DEBUG VARIABLES END
@@ -31,19 +32,31 @@ stage.addChild(bulletsDebugInfoField);
 
 
 let player,
+    isGameOver = false,
     mv = new PIXI.Point(), isShot = false,
-    bullets = [], enemies = [], eg;
+    bullets = [], enemies = [], eg, livesController, lives = 3;
+
+stage.field = new PIXI.Container();
+stage.addChild(stage.field);
+stage.ui = new PIXI.Container();
+stage.addChild(stage.ui);
 
 loader
     .add('player', 'assets/player.png')
     .add('enemy', 'assets/enemy2.png')
     .add('enemy1', 'assets/enemy2_1.png')
     .add('blood', 'assets/anim_blood_atlas.png')
+    .add('hearts', 'assets/hearts.png')
     .load((loader, resources)=>{
-        Blood.setTextureInfo(resources.blood.texture, 4, 4)
+        Blood.setTextureInfo(resources.blood.texture, 4, 4);
 
+        livesController = new Lives(resources.hearts.texture, 3, 1, lives );
+        livesController.x  = 10;
+        livesController.y  = 7;
 
-      
+        window.lives = livesController;
+        stage.ui.addChild(livesController);
+
 
         eg = new EnemyGroup(
             [
@@ -51,13 +64,13 @@ loader
                 resources.enemy1.texture
             ], 
             false);
-        eg.attach(stage);
+        eg.attach(stage.field);
         enemies = [...enemies, ...eg.units];
 
         //creating player
 
         player = new Player(resources.player.texture);
-        stage.addChild(player);
+        stage.field.addChild(player);
 
         player.x = width / 2;
         player.y = height - player.height;
@@ -92,6 +105,8 @@ loader
         // Listen for animate update
        app.ticker.add((delta) => {
 
+           if (isGameOver) return;
+
             let isBulletsFilteringNeeded = false,
                 isEnemiesFilteringNeeded = false;
 
@@ -104,8 +119,6 @@ loader
             eg.update(delta);
 
 
-
-
             //cache enemies boundaries 
             let enemiesBoundaries = enemies.map( enemy => {
                 enemy.calculateBounds();
@@ -113,7 +126,7 @@ loader
              });
 
             for (let i = 0, len = bullets.length; i < len; i++){
-                let bullet = bullets[i] 
+                let bullet = bullets[i];
                 bullet.update(delta);
 
                 //check if bullet if out of stage 
@@ -122,14 +135,13 @@ loader
                     bullet.destroy();
                 } else {
 
-
-                    //check player bullets colision with enemy
+                    //check player bullets collision with enemy
                     if (bullet.direction === -1){ // direction -1 means that this is player's bullet 
                         for (let j = 0, jlen = enemiesBoundaries.length; j < jlen; j++)
                         {
 
                             //check if this enemy still exists 
-                            if (enemiesBoundaries[j]._destroyed) continue;
+                            if (enemies[j]._destroyed) continue;
 
                             bullet.calculateBounds();
 
@@ -142,22 +154,38 @@ loader
                                 bullet.destroy();
 
                                 let enemyPos = enemies[j].getGlobalPosition();
-                                onEnemyDestroy(enemyPos)
+                                onEnemyDestroy(enemyPos);
                                 enemies[j].destroy();
                                 isEnemiesFilteringNeeded = true;
 
                                 break;
                             }
-
                         }
-
-
                     }
-
                 }
-
             }
 
+
+            //check if enemy touched the player
+
+           player.calculateBounds();
+           let playerBounds =  player.getBounds();
+           for (let i = 0; i < enemiesBoundaries.length; i++){
+               if (enemies[i]._destroyed) continue;
+
+               let enemyBoundary = enemiesBoundaries[i];
+
+               if (isOverlap(playerBounds, enemyBoundary)){
+                   enemies[i].destroy();
+                   isEnemiesFilteringNeeded = true;
+                   onEnemyAndPlayerCollided();
+               } else if (enemyBoundary.y > height){
+                   enemies[i].destroy();
+                   isEnemiesFilteringNeeded = true;
+                   onEnemyPassed();
+               }
+
+           }
 
             if (isBulletsFilteringNeeded) {
                 bullets = bullets.filter(bullet => !bullet._destroyed)
@@ -176,15 +204,27 @@ loader
 
 function shoot(){
     let bullet = player.shoot();
-    stage.addChild(bullet);
+    stage.field.addChild(bullet);
     bullets.push(bullet);
+}
+
+function onEnemyAndPlayerCollided() {
+    isGameOver = true;
+}
+
+function onEnemyPassed() {
+
 }
 
 function onEnemyDestroy(position){
     let blood = new Blood();
-    blood.x = position.x;
-    blood.y = position.y;
-    stage.addChild(blood);
+    blood.x = position.x - 50;
+    blood.y = position.y - 20;
+    stage.field.addChild(blood);
+}
+
+
+function playBloodAnimation(position){
 
 }
 
